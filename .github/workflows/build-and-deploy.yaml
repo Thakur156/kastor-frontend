@@ -1,0 +1,44 @@
+name: Deploy Kastor
+
+on:
+  push:
+    branches:
+      - "qa"
+env:
+    DATABASE_URL: '${{ secrets.DATABASE_URL_DEV }}'
+jobs:
+  deploy:
+    runs-on: ubuntu-latest 
+    steps:
+      - name: code checkout
+        uses: actions/checkout@v2
+      
+      - name: install the gcloud cli
+        uses: google-github-actions/setup-gcloud@v0
+        with:
+          project_id: ${{secrets.GOOGLE_PROJECT}}
+          service_account_key: ${{secrets.GOOGLE_APP_CREDS}}
+          install_components: 'gke-gcloud-auth-plugin'
+          export_default_credentials: true
+
+      - name: build and push docker image
+        env:
+          GOOGLE_PROJECT: ${{secrets.GOOGLE_PROJECT}}
+        run: |
+          export git_hash=$(git rev-parse --short "$GITHUB_SHA")
+          gcloud auth configure-docker us-central1-docker.pkg.dev
+          docker build --build-arg DATABASE_URL=$DATABASE_URL -t us-central1-docker.pkg.dev/pollux-422812/repo/kastor_fe:latest .
+          docker push us-central1-docker.pkg.dev/pollux-422812/repo/kastor_fe:latest
+
+
+      - name: deploy to gke
+        run: |
+          export git_hash=$(git rev-parse --short "$GITHUB_SHA")
+          gcloud container clusters get-credentials redash --region us-central1-c
+          cd .devops/k8s/kastor-fe-chart
+          helm dependency update
+          cd ../../../
+          helm upgrade kastor-fe-chart --install  --wait .devops/k8s/kastor-fe-chart -n qa --set=image.tag=$git_hash
+           
+
+

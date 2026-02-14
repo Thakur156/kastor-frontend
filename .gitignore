@@ -1,0 +1,9 @@
+node_modules
+
+/.cache
+/build
+.history/
+.devops/k8s/kastor-fe-chart/non-helm/secrets-dev.yaml
+.devops/k8s/kastor-fe-chart/non-helm/secrets-qa.yaml
+*.DS_Store*
+config.bat

@@ -1,0 +1,181 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "kastor-fe-chart.fullname" . }}
+  labels:
+    {{- include "kastor-fe-chart.labels" . | nindent 4 }}
+spec:
+  {{- if not .Values.autoscaling.enabled }}
+  replicas: {{ .Values.replicaCount }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "kastor-fe-chart.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "kastor-fe-chart.labels" . | nindent 8 }}
+        {{- with .Values.podLabels }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "kastor-fe-chart.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: {{ .Chart.Name }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          env:
+          - name: GOOGLE_APPLICATION_CREDENTIALS
+            value: /var/secrets/google/sk.json
+          - name: STRIPE_PUBLIC_KEY
+            valueFrom:
+              secretKeyRef:
+                name: kastor-fe-secrets
+                key: STRIPE_PUBLIC_KEY
+          - name: STRIPE_SECRET_KEY
+            valueFrom:
+              secretKeyRef:
+                name: kastor-fe-secrets
+                key: STRIPE_SECRET_KEY
+          - name: NODE_ENV
+            valueFrom:
+              secretKeyRef:
+                name: kastor-fe-secrets
+                key: NODE_ENV
+          - name: SESSION_SECRET
+            valueFrom:
+              secretKeyRef:
+                name: kastor-fe-secrets
+                key: SESSION_SECRET
+          - name: ENCRYPTION_SECRET
+            valueFrom:
+              secretKeyRef:
+                name: kastor-fe-secrets
+                key: ENCRYPTION_SECRET
+          - name: PROD_HOST_URL
+            valueFrom:
+              secretKeyRef:
+                name: kastor-fe-secrets
+                key: PROD_HOST_URL
+          - name: SENDGRID_API_KEY
+            valueFrom:
+              secretKeyRef:
+                name: kastor-fe-secrets
+                key: SENDGRID_API_KEY
+          - name: HONEYPOT_ENCRYPTION_SEED
+            valueFrom:
+              secretKeyRef:
+                name: kastor-fe-secrets
+                key: HONEYPOT_ENCRYPTION_SEED
+          - name: GOOGLE_CLIENT_ID 
+            valueFrom:
+              secretKeyRef:
+                name: kastor-fe-secrets
+                key: GOOGLE_CLIENT_ID
+          - name: GOOGLE_CLIENT_SECRET 
+            valueFrom:
+              secretKeyRef:
+                name: kastor-fe-secrets
+                key: GOOGLE_CLIENT_SECRET
+          - name: GOOGLE_CALLBACK_URL 
+            valueFrom:
+              secretKeyRef:
+                name: kastor-fe-secrets
+                key: GOOGLE_CALLBACK_URL
+          - name: KASTOR_BACKEND 
+            valueFrom:
+              secretKeyRef:
+                name: kastor-fe-secrets
+                key: KASTOR_BACKEND
+          - name: DATABASE_URL 
+            valueFrom:
+              secretKeyRef:
+                name: kastor-fe-secrets
+                key: DATABASE_URL
+          - name: OPENAI_API_KEY 
+            valueFrom:
+              secretKeyRef:
+                name: kastor-fe-secrets
+                key: OPENAI_API_KEY
+          - name:  BASE_API_URL
+            valueFrom:
+              secretKeyRef:
+                name: kastor-fe-secrets
+                key: BASE_API_URL
+          - name:  FIREBASE_API_KEY
+            valueFrom:
+              secretKeyRef:
+                name: kastor-fe-secrets
+                key: FIREBASE_API_KEY
+          - name:  FIREBASE_AUTH_DOMAIN
+            valueFrom:
+              secretKeyRef:
+                name: kastor-fe-secrets
+                key: FIREBASE_AUTH_DOMAIN
+          - name:  FIREBASE_DATABASE_URL
+            valueFrom:
+              secretKeyRef:
+                name: kastor-fe-secrets
+                key: FIREBASE_DATABASE_URL
+          - name:  FIREBASE_PROJECT_ID
+            valueFrom:
+              secretKeyRef:
+                name: kastor-fe-secrets
+                key: FIREBASE_PROJECT_ID
+          - name:  FIREBASE_STORAGE_BUCKET
+            valueFrom:
+              secretKeyRef:
+                name: kastor-fe-secrets
+                key: FIREBASE_STORAGE_BUCKET
+          - name:  FIREBASE_MESSAGING_SENDER_ID
+            valueFrom:
+              secretKeyRef:
+                name: kastor-fe-secrets
+                key: FIREBASE_MESSAGING_SENDER_ID
+          - name:  FIREBASE_APP_ID
+            valueFrom:
+              secretKeyRef:
+                name: kastor-fe-secrets
+                key: FIREBASE_APP_ID
+          ports:
+            - name: http
+              containerPort: {{ .Values.service.port }}
+              protocol: TCP
+          livenessProbe:
+            {{- toYaml .Values.livenessProbe | nindent 12 }}
+          readinessProbe:
+            {{- toYaml .Values.readinessProbe | nindent 12 }}
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          {{- with .Values.volumeMounts }}
+          volumeMounts:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+      {{- with .Values.volumes }}
+      volumes:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
